@@ -29,8 +29,7 @@ export const login = (req, res) => {
 
   res.status(200).json({ 
     message: "Welcome back to Odoo!", 
-    user: { id: user._id, username: user.username, email: user.email },
-    redirectUrl
+    user: { id: user._id, username: user.username, email: user.email }
   });
 };
 
@@ -43,3 +42,4 @@ export const logout = (req, res, next) => {
     res.status(200).json({ message: "You are logged out!" });
   });
 };
+
