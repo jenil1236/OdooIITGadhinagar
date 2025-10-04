@@ -1,13 +1,24 @@
+// export default AdminSignup;
 import React, { useState, useEffect } from "react";
-import { Eye, EyeOff, Mail, Lock, User, MapPin, Loader } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  User,
+  MapPin,
+  Loader,
+  Building,
+} from "lucide-react";
 
 const AdminSignup = () => {
   const [formData, setFormData] = useState({
-    name: "",
+    name: "", // Your backend expects name
     email: "",
     password: "",
-    confirmPassword: "",
+    confirmpassword: "",
     country: "",
+    companyname: "",
     currency: "",
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -17,14 +28,15 @@ const AdminSignup = () => {
   const [countries, setCountries] = useState([]);
   const [isLoadingCountries, setIsLoadingCountries] = useState(true);
   const [countryError, setCountryError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
-  // Fetch countries from API on component mount
+  // Fetch countries with currency information
   useEffect(() => {
     const fetchCountries = async () => {
       try {
         setIsLoadingCountries(true);
         const response = await fetch(
-          "https://restcountries.com/v3.1/all?fields=name,currencies"
+          "https://restcountries.com/v3.1/all?fields=name,currencies,cca2"
         );
 
         if (!response.ok) {
@@ -33,7 +45,7 @@ const AdminSignup = () => {
 
         const data = await response.json();
 
-        // Transform API data to a more usable format
+        // Transform API data to include currency information
         const formattedCountries = data
           .map((country) => {
             const countryName = country.name?.common || "Unknown Country";
@@ -48,7 +60,7 @@ const AdminSignup = () => {
 
             return {
               name: countryName,
-              code: country.cca2 || currencyCode,
+              code: country.cca2,
               currency: currencyCode,
               currencyName: currencyInfo.name,
               symbol: currencyInfo.symbol || currencyCode,
@@ -133,15 +145,20 @@ const AdminSignup = () => {
         [name]: "",
       }));
     }
+
+    // Clear success message when form changes
+    if (successMessage) {
+      setSuccessMessage("");
+    }
   };
 
   const validateForm = () => {
     const newErrors = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = "Company name is required";
+      newErrors.name = "Name is required";
     } else if (formData.name.trim().length < 2) {
-      newErrors.name = "Company name must be at least 2 characters";
+      newErrors.name = "Name must be at least 2 characters";
     }
 
     if (!formData.email.trim()) {
@@ -156,14 +173,20 @@ const AdminSignup = () => {
       newErrors.password = "Password must be at least 6 characters";
     }
 
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "Please confirm your password";
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
+    if (!formData.confirmpassword) {
+      newErrors.confirmpassword = "Please confirm your password";
+    } else if (formData.password !== formData.confirmpassword) {
+      newErrors.confirmpassword = "Passwords do not match";
     }
 
     if (!formData.country) {
       newErrors.country = "Please select a country";
+    }
+
+    if (!formData.companyname.trim()) {
+      newErrors.companyname = "Company name is required";
+    } else if (formData.companyname.trim().length < 2) {
+      newErrors.companyname = "Company name must be at least 2 characters";
     }
 
     if (!formData.currency) {
@@ -174,81 +197,57 @@ const AdminSignup = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Test currency conversion API (for verification)
-  const testCurrencyConversion = async (baseCurrency) => {
-    try {
-      const response = await fetch(
-        `https://api.exchangerate-api.com/v4/latest/${baseCurrency}`
-      );
-      if (!response.ok) {
-        throw new Error("Currency API not available");
-      }
-      const data = await response.json();
-      return data.rates ? true : false;
-    } catch (error) {
-      console.warn("Currency conversion API test failed:", error);
-      return false; // API might be down, but we can still proceed
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setSuccessMessage("");
 
     try {
-      // Verify currency conversion API is working
-      const currencyApiAvailable = await testCurrencyConversion(
-        formData.currency
-      );
-
-      if (!currencyApiAvailable) {
-        console.warn(
-          "Currency conversion API is not available, but proceeding with signup..."
-        );
-      }
-
-      // Prepare signup data
+      // Prepare signup data according to the API structure
       const signupData = {
-        companyName: formData.name.trim(),
+        name: formData.name.trim(),
         email: formData.email.trim(),
         password: formData.password,
+        confirmpassword: formData.confirmpassword,
         country: formData.country,
+        companyname: formData.companyname.trim(),
         currency: formData.currency,
-        currencyApiAvailable,
       };
 
-      // Make API call to create company and admin user
-      const response = await fetch("/api/auth/signup", {
+      // Make API call to signup
+      const response = await fetch("/api/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(signupData),
+        credentials: "include", // Important for passport sessions
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create account");
-      }
 
       const result = await response.json();
 
-      // Success - redirect to dashboard or show success message
-      console.log("Company created successfully:", result);
-      alert(
-        `Company "${formData.name}" created successfully! You can now login.`
-      );
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to create account");
+      }
 
+      // Success - show success message
+      console.log("User and company created successfully:", result);
+      setSuccessMessage(result.message || "User registered successfully!");
+      // Redirect to admin dashboard after 2 seconds
+      setTimeout(() => {
+        window.location.href = "/admin/dashboard";
+      }, 2000);
       // Reset form
       setFormData({
         name: "",
         email: "",
         password: "",
-        confirmPassword: "",
+        confirmpassword: "",
         country: "",
+        companyname: "",
         currency: "",
       });
     } catch (error) {
@@ -271,23 +270,23 @@ const AdminSignup = () => {
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-center">
           <h1 className="text-2xl font-bold text-white mb-2">
-            Create Your Company
+            Create Company & Admin Account
           </h1>
           <p className="text-blue-100 text-sm">
-            Setup your expense management system
+            Setup your company and first administrator account
           </p>
         </div>
 
         {/* Form */}
         <div className="p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Company Name */}
+            {/* Name */}
             <div>
               <label
                 htmlFor="name"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Company Name
+                Your Name
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -299,7 +298,7 @@ const AdminSignup = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  placeholder="Benerous Magpie"
+                  placeholder="John Doe"
                   className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                     errors.name ? "border-red-300" : "border-gray-300"
                   }`}
@@ -328,7 +327,7 @@ const AdminSignup = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="your@company.com"
+                  placeholder="your@email.com"
                   className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                     errors.email ? "border-red-300" : "border-gray-300"
                   }`}
@@ -382,7 +381,7 @@ const AdminSignup = () => {
             {/* Confirm Password */}
             <div>
               <label
-                htmlFor="confirmPassword"
+                htmlFor="confirmpassword"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
                 Confirm Password
@@ -393,13 +392,13 @@ const AdminSignup = () => {
                 </div>
                 <input
                   type={showConfirmPassword ? "text" : "password"}
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
+                  id="confirmpassword"
+                  name="confirmpassword"
+                  value={formData.confirmpassword}
                   onChange={handleChange}
                   placeholder="••••••"
                   className={`block w-full pl-10 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.confirmPassword
+                    errors.confirmpassword
                       ? "border-red-300"
                       : "border-gray-300"
                   }`}
@@ -416,9 +415,40 @@ const AdminSignup = () => {
                   )}
                 </button>
               </div>
-              {errors.confirmPassword && (
+              {errors.confirmpassword && (
                 <p className="mt-1 text-sm text-red-600">
-                  {errors.confirmPassword}
+                  {errors.confirmpassword}
+                </p>
+              )}
+            </div>
+
+            {/* Company Name */}
+            <div>
+              <label
+                htmlFor="companyname"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Company Name
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Building className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  id="companyname"
+                  name="companyname"
+                  value={formData.companyname}
+                  onChange={handleChange}
+                  placeholder="Your Company Inc."
+                  className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    errors.companyname ? "border-red-300" : "border-gray-300"
+                  }`}
+                />
+              </div>
+              {errors.companyname && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.companyname}
                 </p>
               )}
             </div>
@@ -429,7 +459,7 @@ const AdminSignup = () => {
                 htmlFor="country"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Country
+                Country (Optional)
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -446,11 +476,9 @@ const AdminSignup = () => {
                     name="country"
                     value={formData.country}
                     onChange={handleChange}
-                    className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none ${
-                      errors.country ? "border-red-300" : "border-gray-300"
-                    }`}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none"
                   >
-                    <option value="">Select a country</option>
+                    <option value="">Select your country (optional)</option>
                     {countries.map((country) => (
                       <option key={country.code} value={country.code}>
                         {country.name}
@@ -474,20 +502,17 @@ const AdminSignup = () => {
                   </div>
                 )}
               </div>
-              {errors.country && (
-                <p className="mt-1 text-sm text-red-600">{errors.country}</p>
-              )}
               {countryError && (
                 <p className="mt-1 text-sm text-yellow-600">{countryError}</p>
               )}
             </div>
 
-            {/* Currency Display (Auto-selected based on country) */}
+            {/* Currency Display (Optional) */}
             {formData.country && (
               <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-blue-900">
-                    Base Currency:
+                    Default Currency:
                   </span>
                   <span className="text-lg font-bold text-blue-700">
                     {getSelectedCountry()?.currency} (
@@ -498,11 +523,18 @@ const AdminSignup = () => {
                   This will be your company's default currency for expense
                   management.
                 </p>
-                <input
-                  type="hidden"
-                  name="currency"
-                  value={formData.currency}
-                />
+              </div>
+            )}
+
+            {/* Success Message */}
+            {successMessage && (
+              <div className="rounded-md bg-green-50 p-4">
+                <p className="text-sm text-green-800 font-medium">
+                  {successMessage}
+                </p>
+                <p className="text-xs text-green-700 mt-1">
+                  You can now login with your credentials.
+                </p>
               </div>
             )}
 
@@ -522,10 +554,10 @@ const AdminSignup = () => {
               {isLoading ? (
                 <div className="flex items-center justify-center">
                   <Loader className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
-                  Creating Company...
+                  Creating Account...
                 </div>
               ) : (
-                "Create Company"
+                "Create Company & Admin Account"
               )}
             </button>
           </form>
