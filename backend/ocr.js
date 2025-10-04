@@ -11,7 +11,11 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
+<<<<<<< HEAD
+const PORT = process.env.PORT || 8000;
+=======
 const PORT = process.env.PORT || 5000;
+>>>>>>> d1fef75d3f973a487f35107bde4d1270d36aa0e1
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -128,6 +132,25 @@ const processReceiptWithOCR = async (filePath) => {
 
 // IMPROVED RECEIPT PARSING WITH BETTER AMOUNT DETECTION
 const parseReceiptText = (text) => {
+<<<<<<< HEAD
+  console.log("Parsing receipt text...");
+
+  const parsedData = {
+    amount: null,
+    date: null,
+    description: "",
+    vendor: "",
+    currency: "USD",
+    items: [],
+    tax: null,
+    total: null,
+    confidence: 0,
+  };
+
+  // Clean and normalize the text
+  const cleanText = text.replace(/\s+/g, " ").trim();
+  console.log("Cleaned text:", cleanText);
+=======
   console.log('Parsing receipt text...');
   
   const parsedData = {
@@ -145,10 +168,27 @@ const parseReceiptText = (text) => {
   // Clean and normalize the text
   const cleanText = text.replace(/\s+/g, ' ').trim();
   console.log('Cleaned text:', cleanText);
+>>>>>>> d1fef75d3f973a487f35107bde4d1270d36aa0e1
 
   // FIX FOR CORRUPTED OCR TEXT
   // The amount might appear as "$1 23 < 50" or similar corruption
   // Let's look for patterns around "Amount Received"
+<<<<<<< HEAD
+
+  // Method 1: Look for "Amount Received" section specifically
+  const amountReceivedMatch = cleanText.match(
+    /Amount\s*Received[^\$]*\$?([0-9][0-9,\s<\.]*[0-9])/i
+  );
+  if (amountReceivedMatch) {
+    console.log("Found Amount Received section:", amountReceivedMatch[0]);
+    const corruptedAmount = amountReceivedMatch[1];
+    console.log("Corrupted amount string:", corruptedAmount);
+
+    // Clean the corrupted amount
+    const cleanedAmount = cleanCorruptedAmount(corruptedAmount);
+    console.log("Cleaned amount:", cleanedAmount);
+
+=======
   
   // Method 1: Look for "Amount Received" section specifically
   const amountReceivedMatch = cleanText.match(/Amount\s*Received[^\$]*\$?([0-9][0-9,\s<\.]*[0-9])/i);
@@ -161,6 +201,7 @@ const parseReceiptText = (text) => {
     const cleanedAmount = cleanCorruptedAmount(corruptedAmount);
     console.log('Cleaned amount:', cleanedAmount);
     
+>>>>>>> d1fef75d3f973a487f35107bde4d1270d36aa0e1
     if (cleanedAmount) {
       parsedData.amount = cleanedAmount;
       parsedData.total = cleanedAmount;
@@ -170,19 +211,33 @@ const parseReceiptText = (text) => {
   // Method 2: If above fails, look for any dollar amount pattern
   if (!parsedData.amount) {
     const dollarPatterns = [
+<<<<<<< HEAD
+      /\$(\d+)\s*[<\\]?\s*(\d{2})/, // $123 < 50 or $123\50
+      /\$(\d+)\s+(\d{2})/, // $123 50
+      /\$(\d+\.\d{2})/, // $123.50
+      /(\d+)\s*[<\\]?\s*(\d{2})\s*\$/, // 123 < 50 $
+      /Amount[^\d]*(\d+)\s*[<\\]?\s*(\d{2})/i,
+=======
       /\$(\d+)\s*[<\\]?\s*(\d{2})/,  // $123 < 50 or $123\50
       /\$(\d+)\s+(\d{2})/,           // $123 50
       /\$(\d+\.\d{2})/,              // $123.50
       /(\d+)\s*[<\\]?\s*(\d{2})\s*\$/, // 123 < 50 $
       /Amount[^\d]*(\d+)\s*[<\\]?\s*(\d{2})/i
+>>>>>>> d1fef75d3f973a487f35107bde4d1270d36aa0e1
     ];
 
     for (const pattern of dollarPatterns) {
       const match = cleanText.match(pattern);
       if (match) {
+<<<<<<< HEAD
+        console.log("Found amount with pattern:", pattern, match);
+        let amount;
+
+=======
         console.log('Found amount with pattern:', pattern, match);
         let amount;
         
+>>>>>>> d1fef75d3f973a487f35107bde4d1270d36aa0e1
         if (match[1] && match[2]) {
           // Handle cases like "123 < 50" -> 123.50
           amount = parseFloat(`${match[1]}.${match[2]}`);
@@ -190,7 +245,11 @@ const parseReceiptText = (text) => {
           // Handle cases like "123.50"
           amount = parseFloat(match[1]);
         }
+<<<<<<< HEAD
+
+=======
         
+>>>>>>> d1fef75d3f973a487f35107bde4d1270d36aa0e1
         if (amount && !isNaN(amount) && amount > 0) {
           parsedData.amount = amount;
           parsedData.total = amount;
@@ -203,9 +262,15 @@ const parseReceiptText = (text) => {
   // Method 3: Look for numbers that look like money amounts
   if (!parsedData.amount) {
     const moneyLikePatterns = [
+<<<<<<< HEAD
+      /(\d{2,3}\.\d{2})/, // 123.50
+      /(\d{1,3}\s*[<\\]\s*\d{2})/, // 123<50 or 123\50
+      /(\d{1,3}\s+\d{2})/, // 123 50
+=======
       /(\d{2,3}\.\d{2})/,  // 123.50
       /(\d{1,3}\s*[<\\]\s*\d{2})/, // 123<50 or 123\50
       /(\d{1,3}\s+\d{2})/  // 123 50
+>>>>>>> d1fef75d3f973a487f35107bde4d1270d36aa0e1
     ];
 
     for (const pattern of moneyLikePatterns) {
@@ -213,7 +278,16 @@ const parseReceiptText = (text) => {
       for (const match of matches) {
         const potentialAmount = cleanCorruptedAmount(match[1]);
         if (potentialAmount && potentialAmount > 0 && potentialAmount < 10000) {
+<<<<<<< HEAD
+          console.log(
+            "Found money-like amount:",
+            match[1],
+            "->",
+            potentialAmount
+          );
+=======
           console.log('Found money-like amount:', match[1], '->', potentialAmount);
+>>>>>>> d1fef75d3f973a487f35107bde4d1270d36aa0e1
           parsedData.amount = potentialAmount;
           parsedData.total = potentialAmount;
           break;
@@ -234,12 +308,34 @@ const parseReceiptText = (text) => {
     if (match) {
       const dateStr = match[1];
       parsedData.date = formatSimpleDate(dateStr);
+<<<<<<< HEAD
+      console.log("Found date:", parsedData.date);
+=======
       console.log('Found date:', parsedData.date);
+>>>>>>> d1fef75d3f973a487f35107bde4d1270d36aa0e1
       break;
     }
   }
 
   // VENDOR EXTRACTION - look for names after "Received From"
+<<<<<<< HEAD
+  const vendorMatch = cleanText.match(
+    /Received\s*From[:\s]*([^\n\r0-9$]{2,50})/i
+  );
+  if (vendorMatch) {
+    parsedData.vendor = vendorMatch[1].trim();
+    console.log("Found vendor:", parsedData.vendor);
+  } else {
+    // Fallback: look for any name-like text at the beginning
+    const nameMatch = cleanText.match(/([A-Z][a-z]+\s+[A-Z][a-z]+)/);
+    if (
+      nameMatch &&
+      !nameMatch[1].includes("Receipt") &&
+      !nameMatch[1].includes("Amount")
+    ) {
+      parsedData.vendor = nameMatch[1];
+      console.log("Found fallback vendor:", parsedData.vendor);
+=======
   const vendorMatch = cleanText.match(/Received\s*From[:\s]*([^\n\r0-9$]{2,50})/i);
   if (vendorMatch) {
     parsedData.vendor = vendorMatch[1].trim();
@@ -250,14 +346,24 @@ const parseReceiptText = (text) => {
     if (nameMatch && !nameMatch[1].includes('Receipt') && !nameMatch[1].includes('Amount')) {
       parsedData.vendor = nameMatch[1];
       console.log('Found fallback vendor:', parsedData.vendor);
+>>>>>>> d1fef75d3f973a487f35107bde4d1270d36aa0e1
     }
   }
 
   // DESCRIPTION EXTRACTION - look for product names
+<<<<<<< HEAD
+  const purposeMatch = cleanText.match(
+    /Purpose\s*of\s*Payment[:\s]*([^\n\r]+)/i
+  );
+  if (purposeMatch) {
+    parsedData.description = purposeMatch[1].trim();
+    console.log("Found description:", parsedData.description);
+=======
   const purposeMatch = cleanText.match(/Purpose\s*of\s*Payment[:\s]*([^\n\r]+)/i);
   if (purposeMatch) {
     parsedData.description = purposeMatch[1].trim();
     console.log('Found description:', parsedData.description);
+>>>>>>> d1fef75d3f973a487f35107bde4d1270d36aa0e1
   }
 
   // If no specific description found, create a generic one
@@ -269,7 +375,13 @@ const parseReceiptText = (text) => {
     } else if (parsedData.vendor) {
       parsedData.description = `${parsedData.vendor} - Receipt`;
     } else {
+<<<<<<< HEAD
+      parsedData.description = `Receipt ${
+        parsedData.date || new Date().toISOString().split("T")[0]
+      }`;
+=======
       parsedData.description = `Receipt ${parsedData.date || new Date().toISOString().split('T')[0]}`;
+>>>>>>> d1fef75d3f973a487f35107bde4d1270d36aa0e1
     }
   }
 
@@ -277,17 +389,39 @@ const parseReceiptText = (text) => {
   if (parsedData.amount) {
     parsedData.items.push({
       description: parsedData.description,
+<<<<<<< HEAD
+      amount: parsedData.amount,
+    });
+  }
+
+  console.log("Final parsed data:", parsedData);
+=======
       amount: parsedData.amount
     });
   }
 
   console.log('Final parsed data:', parsedData);
+>>>>>>> d1fef75d3f973a487f35107bde4d1270d36aa0e1
   return parsedData;
 };
 
 // HELPER FUNCTION TO CLEAN CORRUPTED AMOUNTS
 const cleanCorruptedAmount = (amountStr) => {
   if (!amountStr) return null;
+<<<<<<< HEAD
+
+  console.log("Cleaning corrupted amount:", amountStr);
+
+  // Remove spaces, <, \, and other OCR artifacts
+  let cleaned = amountStr
+    .replace(/\s+/g, "")
+    .replace(/[<\\\[]/g, ".")
+    .replace(/[^0-9\.]/g, "");
+
+  // Ensure we have a proper decimal format
+  if (cleaned.includes(".")) {
+    const parts = cleaned.split(".");
+=======
   
   console.log('Cleaning corrupted amount:', amountStr);
   
@@ -300,6 +434,7 @@ const cleanCorruptedAmount = (amountStr) => {
   // Ensure we have a proper decimal format
   if (cleaned.includes('.')) {
     const parts = cleaned.split('.');
+>>>>>>> d1fef75d3f973a487f35107bde4d1270d36aa0e1
     if (parts.length === 2) {
       // Format as dollars.cents
       cleaned = `${parts[0]}.${parts[1].substring(0, 2)}`;
@@ -310,15 +445,53 @@ const cleanCorruptedAmount = (amountStr) => {
     const cents = cleaned.slice(-2);
     cleaned = `${dollars}.${cents}`;
   }
+<<<<<<< HEAD
+
+  const amount = parseFloat(cleaned);
+  console.log("Cleaned amount result:", amount, "from:", amountStr);
+
+=======
   
   const amount = parseFloat(cleaned);
   console.log('Cleaned amount result:', amount, 'from:', amountStr);
   
+>>>>>>> d1fef75d3f973a487f35107bde4d1270d36aa0e1
   return !isNaN(amount) && amount > 0 && amount < 10000 ? amount : null;
 };
 
 // DEBUG FUNCTION TO ANALYZE OCR OUTPUT
 const debugOCRText = (text) => {
+<<<<<<< HEAD
+  console.log("=== OCR DEBUG ANALYSIS ===");
+  console.log("Full text:", text);
+
+  const lines = text.split("\n");
+  console.log("Lines:", lines.length);
+
+  lines.forEach((line, index) => {
+    if (
+      line.includes("Amount") ||
+      line.includes("amount") ||
+      line.includes("$")
+    ) {
+      console.log(`Line ${index} (AMOUNT RELATED):`, line);
+    }
+    if (line.includes("Received") || line.includes("received")) {
+      console.log(`Line ${index} (RECEIVED RELATED):`, line);
+    }
+  });
+
+  // Look for specific patterns
+  const amountReceivedRegex = /Amount\s*Received/gi;
+  const amountMatches = [...text.matchAll(amountReceivedRegex)];
+  console.log("Amount Received matches:", amountMatches.length);
+
+  const dollarRegex = /\$[0-9\s<\\\.]+/g;
+  const dollarMatches = [...text.matchAll(dollarRegex)];
+  console.log("Dollar sign matches:", dollarMatches);
+
+  console.log("=== END DEBUG ===");
+=======
   console.log('=== OCR DEBUG ANALYSIS ===');
   console.log('Full text:', text);
   
@@ -344,6 +517,7 @@ const debugOCRText = (text) => {
   console.log('Dollar sign matches:', dollarMatches);
   
   console.log('=== END DEBUG ===');
+>>>>>>> d1fef75d3f973a487f35107bde4d1270d36aa0e1
 };
 
 // SIMPLE DATE FORMATTING
