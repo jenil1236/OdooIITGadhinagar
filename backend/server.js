@@ -9,10 +9,12 @@ import LocalStrategy from "passport-local";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import MongoStore from "connect-mongo";
 import User from "./models/user.js";
+
 import { connectDB } from "./config/db.js";
 
 import userRouter from "./routes/user.js";
-
+import expenseRouter from "./routes/expense.js";
+import nonAdminStaffRouter from "./routes/nonAdminStaff.js";
 //App setup
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -53,7 +55,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-passport.use(new LocalStrategy(User.authenticate()));
+passport.use(new LocalStrategy({ usernameField: "email" }, User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
@@ -91,8 +93,9 @@ passport.use(new GoogleStrategy({
 }));
 
 // Routes
-app.use("/api", userRouter);
-
+app.use("/api/users", userRouter);
+app.use("/api/expenses", expenseRouter);
+app.use("/api/staff", nonAdminStaffRouter);
 // DB connection and server start
 connectDB()
     .then(() => {
