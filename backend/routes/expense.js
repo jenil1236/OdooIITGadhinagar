@@ -1,6 +1,6 @@
 import express from "express";
 import passport from "passport";
-import { createExpense, getExpense, deleteExpense, getHistory } from "../controllers/expense.js";
+import { createExpense, getExpense, deleteExpense, getHistory, getAllExpense } from "../controllers/expense.js";
 import { isLoggedIn } from "../middleware.js";
 const router = express.Router();
 
@@ -9,6 +9,8 @@ router.post("/", isLoggedIn, createExpense);
 
 // GET /expenses
 router.get("/", isLoggedIn, getExpense);
+
+router.get("/all", isLoggedIn, getAllExpense);
 
 router.get("/history/:id", isLoggedIn, getHistory);
 // PUT /expenses/:id

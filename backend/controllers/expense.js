@@ -76,6 +76,16 @@ const getHistory = async (req, res) => {
   }
 };
 
+const getAllExpense = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const expenses = await Expense.find({ employee: id });
+    res.status(200).json(expenses);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  } 
+};
+
 const getExpense = async (req, res) => {
   try {
     const id = req.params.id;
@@ -102,4 +112,4 @@ const deleteExpense = async (req, res) => {
   }
 };
 
-export { createExpense, getExpense, deleteExpense, getHistory };
+export { createExpense, getExpense, deleteExpense, getHistory, getAllExpense };
