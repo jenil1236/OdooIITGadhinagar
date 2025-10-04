@@ -87,7 +87,7 @@ const updateExpense = async (req, res) => {
             }
             else if (count === total) {
                 expense.status = 'REJECTED';
-                expense.currentApproverId = null;
+                expense.currentApproverId = null;non
             }
         }
         res.status(200).json(expense);
