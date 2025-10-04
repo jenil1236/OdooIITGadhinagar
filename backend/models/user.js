@@ -4,11 +4,7 @@ import passportLocalMongoose from "passport-local-mongoose";
 const { Schema } = mongoose;
 
 const userSchema = new Schema({
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-  },
+  name: { type: String, required: true },
   companyId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Company', 
@@ -20,7 +16,8 @@ const userSchema = new Schema({
   },
   managerId: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User' 
+    ref: 'User' ,
+    default: null
   },
   country: {
     type: String,
@@ -37,6 +34,5 @@ const userSchema = new Schema({
   isManagerApprover: { type: Boolean, default: false },
 });
 
-userSchema.plugin(passportLocalMongoose);
-
+userSchema.plugin(passportLocalMongoose, { usernameField: "email" });
 export default mongoose.model('User', userSchema);
