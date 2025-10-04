@@ -22,8 +22,11 @@ const expenseSchema = new mongoose.Schema({
             type: String,
             enum: ['PENDING', 'APPROVED', 'REJECTED']
         },
-        isManagerApprover: { type: Boolean, default: false }
-    }]
+    }],
+    isManagerApprover: { type: Boolean, default: false },
+    isSequentialApproval: { type: Boolean },
+    minimumApprovalPercentage: { type: Number, min: 0, max: 100 },
+    history: [{ type: mongoose.Schema.Types.ObjectId, ref: 'History' }]
 }, { timestamps: true });
 
 const Expense = mongoose.model('Expense', expenseSchema);
