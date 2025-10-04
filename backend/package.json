@@ -24,6 +24,7 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "express-session": "^1.18.2",
+    "generate-password": "^1.7.1",
     "mongoose": "^8.18.3",
     "nodemailer": "^7.0.6",
     "passport": "^0.7.0",

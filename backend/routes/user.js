@@ -8,25 +8,7 @@ const router = express.Router();
 router.post("/signup", signup);
 
 // POST /login
-router.post("/login", (req, res, next) => {
-  passport.authenticate("local", (err, user, info) => {
-    if (err) return next(err);
-    if (!user) {
-      return res.status(401).json({ error: info.message || "Invalid credentials" });
-    }
-    req.login(user, (err) => {
-      if (err) return next(err);
-      return res.status(200).json({
-        message: "Login successful",
-        user: {
-          id: user._id,
-          username: user.username,
-          email: user.email
-        }
-      });
-    });
-  })(req, res, next);
-});
+router.post("/login", login);
 
 // POST /logout
 router.post("/logout", logout);
