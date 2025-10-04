@@ -6,10 +6,26 @@ import countryToCurrency from "country-to-currency";
 import getSymbolFromCurrency from "currency-symbol-map";
 
 async function convertCurrency(amount, from, to) {
-  const url = `https://api.exchangerate.host/convert?from=${from}&to=${to}&amount=${amount}`;
-  const { data } = await axios.get(url);
-  return data.result;
+  // Fixed exchange rate (update as needed)
+  const USD_TO_INR = 83.5;  // example value
+  const INR_TO_USD = 1 / USD_TO_INR;
+
+  if (from === "USD" && to === "INR") {
+    return amount * USD_TO_INR;
+  }
+  if (from === "INR" && to === "USD") {
+    return amount * INR_TO_USD;
+  }
+
+  // same currency, no conversion needed
+  if (from === to) {
+    return amount;
+  }
+
+  // unsupported currency conversion
+  return null;
 }
+
 
  const createExpense = async (req, res) => {
   try {
@@ -32,6 +48,12 @@ async function convertCurrency(amount, from, to) {
 
     // 3. Convert amount
     const convertedAmount = await convertCurrency(amount, currency, targetCurrency);
+
+    if (convertedAmount === undefined || convertedAmount === null) {
+  return res.status(400).json({ 
+    message: `Currency conversion failed from ${currency} to ${targetCurrency}` 
+  });
+}
 
     // Create expense
     const newExpense = new Expense({
@@ -88,4 +110,4 @@ const deleteExpense = async (req, res) => {
   }
 };
 
-export { createExpense, getExpense, updateExpense, deleteExpense };
+export { createExpense, getExpense,  deleteExpense };
