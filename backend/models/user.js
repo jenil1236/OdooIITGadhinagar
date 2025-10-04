@@ -34,7 +34,6 @@ const userSchema = new Schema({
   isManagerApprover: { type: Boolean},
   isSequentialApproval: { type: Boolean },
   minimumApprovalPercentage: { type: Number, min: 0, max: 100 },
-
 }, { timestamps: true});
 
 userSchema.plugin(passportLocalMongoose, { usernameField: "email" });
