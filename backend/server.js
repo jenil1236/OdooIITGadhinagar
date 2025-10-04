@@ -9,6 +9,7 @@ import LocalStrategy from "passport-local";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import MongoStore from "connect-mongo";
 import User from "./models/user.js";
+
 import { connectDB } from "./config/db.js";
 
 import userRouter from "./routes/user.js";
