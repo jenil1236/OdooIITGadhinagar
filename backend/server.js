@@ -14,6 +14,7 @@ import { connectDB } from "./config/db.js";
 
 import userRouter from "./routes/user.js";
 import expenseRouter from "./routes/expense.js";
+import nonAdminStaffRouter from "./routes/nonAdminStaff.js";
 //App setup
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -94,6 +95,7 @@ passport.use(new GoogleStrategy({
 // Routes
 app.use("/api/users", userRouter);
 app.use("/api/expenses", expenseRouter);
+app.use("/api/staff", nonAdminStaffRouter);
 // DB connection and server start
 connectDB()
     .then(() => {

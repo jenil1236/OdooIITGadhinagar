@@ -1,6 +1,6 @@
 import express from "express";
 import passport from "passport";
-import { createExpense, getExpense, updateExpense, deleteExpense } from "../controllers/expense.js";
+import { createExpense, getExpense, deleteExpense, getHistory } from "../controllers/expense.js";
 import { isLoggedIn } from "../middleware.js";
 const router = express.Router();
 
@@ -10,8 +10,9 @@ router.post("/", isLoggedIn, createExpense);
 // GET /expenses
 router.get("/", isLoggedIn, getExpense);
 
+router.get("/history/:id", isLoggedIn, getHistory);
 // PUT /expenses/:id
-router.put("/:id", isLoggedIn, updateExpense);
+// router.put("/:id", isLoggedIn, updateExpense);
 
 // DELETE /expenses/:id
 router.delete("/:id", isLoggedIn, deleteExpense);

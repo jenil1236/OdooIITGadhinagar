@@ -4,6 +4,7 @@ import History from "../models/history.js";
 import axios from "axios";
 import countryToCurrency from "country-to-currency";
 import getSymbolFromCurrency from "currency-symbol-map";
+import { get } from 'mongoose';
 
 async function convertCurrency(amount, from, to) {
   const url = `https://api.exchangerate.host/convert?from=${from}&to=${to}&amount=${amount}`;
@@ -11,7 +12,7 @@ async function convertCurrency(amount, from, to) {
   return data.result;
 }
 
- const createExpense = async (req, res) => {
+const createExpense = async (req, res) => {
   try {
     const { description, category, amount, currency, date, paidBy, remarks } = req.body;
 
@@ -61,6 +62,19 @@ async function convertCurrency(amount, from, to) {
   }
 };
 
+const getHistory = async (req, res) => {
+  try {
+    const expenseId = req.params.id;
+    const expense = await Expense.findById(expenseId);
+    if (!expense) {
+      return res.status(404).json({ message: 'Expense not found' });
+    }
+    const historyRecords = await History.find({ expense: expenseId }).populate('approver');
+    res.status(200).json(historyRecords);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 const getExpense = async (req, res) => {
   try {
@@ -88,4 +102,4 @@ const deleteExpense = async (req, res) => {
   }
 };
 
-export { createExpense, getExpense, updateExpense, deleteExpense };
+export { createExpense, getExpense, deleteExpense, getHistory };
