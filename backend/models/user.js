@@ -27,7 +27,7 @@ const userSchema = new Schema({
     approverId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     status: { 
       type: String, 
-      enum: ['PENDING', 'APPROVED', 'REJECTED', 'SKIPPED'] 
+      enum: ['PENDING', 'APPROVED', 'REJECTED'] 
     },
     isRequired: { type: Boolean, default: false }
   }],

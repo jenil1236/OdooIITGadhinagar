@@ -1,15 +1,65 @@
 import Expense from '../models/expense.js';
+import User from "../models/user.js";
+import axios from "axios";
+import countryToCurrency from "country-to-currency";
+import getSymbolFromCurrency from "currency-symbol-map";
 
-const createExpense = async (req, res) => {
-    try {
-        const expenseData = req.body;       
-        const newExpense = new Expense(expenseData);
-        await newExpense.save();
-        res.status(201).json(newExpense);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+async function convertCurrency(amount, from, to) {
+  const url = `https://api.exchangerate.host/convert?from=${from}&to=${to}&amount=${amount}`;
+  const { data } = await axios.get(url);
+  return data.result;
+}
+
+export const createExpense = async (req, res) => {
+  try {
+    const { employee, description, category, amount, currency, date, paidBy, remarks } = req.body;
+
+    // Fetch user
+    const user = await User.findById(employee);
+    if (!user) {
+      return res.status(404).json({ message: "Employee not found" });
     }
+
+    // 1. Get target currency from user's country
+    const targetCurrency = countryToCurrency[user.country]; // e.g. "INR"
+    if (!targetCurrency) {
+      return res.status(400).json({ message: "Could not find currency for user's country" });
+    }
+
+    // 2. Get currency symbol
+    const targetSymbol = getSymbolFromCurrency(targetCurrency) || targetCurrency;
+
+    // 3. Convert amount
+    const convertedAmount = await convertCurrency(amount, currency, targetCurrency);
+
+    // Create expense
+    const newExpense = new Expense({
+      employee,
+      description,
+      category,
+      amount,
+      currency, // original currency
+      date,
+      paidBy,
+      remarks,
+      company: user.companyId,
+      approvalFlow: user.approvalFlow,
+      convertedAmount,
+      convertedCurrency: targetCurrency,
+      convertedSymbol: targetSymbol
+    });
+
+    await newExpense.save();
+
+    res.status(201).json({ 
+      message: "Expense created successfully", 
+      expense: newExpense 
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message || "Error creating expense" });
+  }
 };
+
 
 const getExpense = async (req, res) => {
     try {
