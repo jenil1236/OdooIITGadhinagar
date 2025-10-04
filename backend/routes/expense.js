@@ -1,18 +1,18 @@
 import express from "express";
 import passport from "passport";
-import { createExpense, getExpenses, updateExpense, deleteExpense } from "../controllers/expense.js";
-
+import { createExpense, getExpense, updateExpense, deleteExpense } from "../controllers/expense.js";
+import { isLoggedIn } from "../middleware.js";
 const router = express.Router();
 
 // POST /expenses
-router.post("/", passport.authenticate("jwt", { session: false }), createExpense);
+router.post("/", isLoggedIn, createExpense);
 
 // GET /expenses
-router.get("/", passport.authenticate("jwt", { session: false }), getExpenses);
+router.get("/", isLoggedIn, getExpense);
 
 // PUT /expenses/:id
-router.put("/:id", passport.authenticate("jwt", { session: false }), updateExpense);
+router.put("/:id", isLoggedIn, updateExpense);
 
 // DELETE /expenses/:id
-router.delete("/:id", passport.authenticate("jwt", { session: false }), deleteExpense);
+router.delete("/:id", isLoggedIn, deleteExpense);
 export default router;

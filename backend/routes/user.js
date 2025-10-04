@@ -59,30 +59,30 @@
 
 import express from "express";
 import passport from "passport";
-import { signup, login, logout, advancedSignup, forgotPassword, verifyOtp, resetPassword } from "../controllers/user.js";
+import { Signup, login, logout, advancedSignup, forgotPassword, verifyOtp, resetPassword } from "../controllers/user.js";
 
 const router = express.Router();
 
 // POST /signup
-router.post("/signup", signup);
+router.post("/signup", Signup); // working
 
 // POST /register
-router.post("/register", advancedSignup);
+router.post("/register", advancedSignup); // working
 
 // POST /login
-router.post("/login", login);
+router.post("/login", login); // working
 
 // POST /logout
-router.post("/logout", logout);
+router.post("/logout", logout); // working
 
 // POST /forgot-password
-router.post("/forgot-password", forgotPassword);
+router.post("/forgot-password", forgotPassword); // working
 
 // POST /verify-otp
-router.post("/verify-otp", verifyOtp);
+router.post("/verify-otp", verifyOtp); // working
 
 // POST /reset-password
-router.post("/reset-password", resetPassword);
+router.post("/reset-password", resetPassword); // working
 
 // Google login
 router.get("/auth/google",

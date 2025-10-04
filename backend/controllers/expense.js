@@ -10,12 +10,12 @@ async function convertCurrency(amount, from, to) {
   return data.result;
 }
 
-export const createExpense = async (req, res) => {
+ const createExpense = async (req, res) => {
   try {
-    const { employee, description, category, amount, currency, date, paidBy, remarks } = req.body;
+    const { description, category, amount, currency, date, paidBy, remarks } = req.body;
 
     // Fetch user
-    const user = await User.findById(employee);
+    const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ message: "Employee not found" });
     }
@@ -34,7 +34,7 @@ export const createExpense = async (req, res) => {
 
     // Create expense
     const newExpense = new Expense({
-      employee,
+      employee: req.user._id,
       description,
       category,
       amount,
