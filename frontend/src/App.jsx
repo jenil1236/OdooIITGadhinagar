@@ -1,159 +1,88 @@
-import React, { useState } from "react";
+// src/App.jsx
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import HomePage from "./components/HomePage";
+import AdminDashboard from "./components/AdminDashboard";
+import EmployeeDashboard from "./components/EmployeeDashboard"; // Add this import
+import AdminSignup from "./components/AdminSignup";
+import Login from "./components/Login";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import ManagerDashboard from "./components/ManagerDashboard";
 
-const App = () => {
-  const [signupData, setSignupData] = useState({ username: "", email: "", password: "" });
-  const [loginData, setLoginData] = useState({ username: "", password: "" });
-  const [response, setResponse] = useState(null);
+// Protected Route component
+const ProtectedRoute = ({ children, requiredRole }) => {
+  const { user } = useAuth();
 
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
 
-  // Local Signup
-  const signup = async () => {
-    try {
-      const res = await fetch(`/api/signup`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(signupData),
-      });
-      const data = await res.json();
-      setResponse(data);
-    } catch (err) {
-      console.error(err);
+  if (requiredRole && user.role !== requiredRole) {
+    // Redirect to appropriate dashboard based on actual role
+    if (user.role === "ADMIN") {
+      return <Navigate to="/admin/dashboard" />;
+    } else {
+      return <Navigate to="/employee/dashboard" />;
     }
-  };
+  }
 
-  // Local Login
-  const login = async () => {
-    try {
-      const res = await fetch(`/api/login`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(loginData),
-      });
-      const data = await res.json();
-      setResponse(data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // Logout
-  const logout = async () => {
-    try {
-      const res = await fetch(`/api/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-      const data = await res.json();
-      setResponse(data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // Google Login
-  const googleLogin = () => {
-    window.location.href = `http://localhost:5000/api/auth/google`;
-  };
-
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="w-full max-w-md p-8 bg-white shadow-lg rounded-lg">
-        <h1 className="text-2xl font-semibold text-gray-800 mb-6 text-center">Login / Signup Test</h1>
-
-        {/* Signup Form */}
-        <div className="mb-6">
-          <h2 className="text-lg font-medium text-gray-700 mb-3">Signup (Local)</h2>
-          <input
-            type="text"
-            placeholder="Username"
-            value={signupData.username}
-            onChange={(e) => setSignupData({ ...signupData, username: e.target.value })}
-            className="w-full mb-2 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            value={signupData.email}
-            onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
-            className="w-full mb-2 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={signupData.password}
-            onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
-            className="w-full mb-4 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            onClick={signup}
-            className="w-full bg-blue-600 text-white font-semibold py-2 rounded hover:bg-blue-700 transition"
-          >
-            Signup
-          </button>
-        </div>
-
-        {/* Login Form */}
-        <div className="mb-6">
-          <h2 className="text-lg font-medium text-gray-700 mb-3">Login (Local)</h2>
-          <input
-            type="text"
-            placeholder="Username"
-            value={loginData.username}
-            onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
-            className="w-full mb-2 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={loginData.password}
-            onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-            className="w-full mb-4 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            onClick={login}
-            className="w-full bg-green-600 text-white font-semibold py-2 rounded hover:bg-green-700 transition"
-          >
-            Login
-          </button>
-        </div>
-
-        {/* Google Login */}
-        <div className="mb-6">
-          <h2 className="text-lg font-medium text-gray-700 mb-3 text-center">Or Login with Google</h2>
-          <button
-            onClick={googleLogin}
-            className="w-full flex items-center justify-center border border-gray-300 py-2 rounded hover:shadow-md transition"
-          >
-            <img
-              src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg"
-              alt="Google"
-              className="w-6 h-6 mr-2"
-            />
-            <span className="font-medium text-gray-700">Continue with Google</span>
-          </button>
-        </div>
-
-        {/* Logout */}
-        <div className="mb-4">
-          <button
-            onClick={logout}
-            className="w-full bg-red-500 text-white font-semibold py-2 rounded hover:bg-red-600 transition"
-          >
-            Logout
-          </button>
-        </div>
-
-        {/* Response */}
-        {response && (
-          <div className="response p-4 bg-gray-100 border border-gray-300 rounded">
-            <pre className="text-sm">{JSON.stringify(response, null, 2)}</pre>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  return children;
 };
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <div className="App">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/signup" element={<AdminSignup />} />
+            <Route path="/login" element={<Login />} />
+
+            {/* Admin Routes */}
+            <Route
+              path="/admin/dashboard"
+              element={
+                // <ProtectedRoute requiredRole="ADMIN">
+                <AdminDashboard />
+                // </ProtectedRoute>
+              }
+            />
+
+            {/* Employee Routes */}
+            <Route
+              path="/employee/dashboard"
+              element={
+                // <ProtectedRoute requiredRole="EMPLOYEE">
+                <EmployeeDashboard />
+                // </ProtectedRoute>
+              }
+            />
+            {/* {Manager Routes} */}
+            <Route
+              path="/manager/dashboard"
+              element={
+                // <ProtectedRoute requiredRole="EMPLOYEE">
+                <ManagerDashboard />
+                // </ProtectedRoute>
+              }
+            />
+
+            {/* Default redirect */}
+            <Route path="/" element={<Navigate to="/login" />} />
+
+            {/* Fallback route */}
+            <Route path="*" element={<Navigate to="/login" />} />
+          </Routes>
+        </div>
+      </Router>
+    </AuthProvider>
+  );
+}
 
 export default App;

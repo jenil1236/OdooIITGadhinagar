@@ -17,13 +17,13 @@ const expenseSchema = new mongoose.Schema({
     },
     approvalFlow: [{
         approverId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-        isrequired: { type: Boolean, default: false },
         status: {
             type: String,
             enum: ['PENDING', 'APPROVED', 'REJECTED']
         },
+        isRequired: { type: Boolean, default: false }
     }],
-    isManagerApprover: { type: Boolean, default: false },
+    isManagerApprover: { type: Boolean },
     isSequentialApproval: { type: Boolean },
     minimumApprovalPercentage: { type: Number, min: 0, max: 100 },
     history: [{ type: mongoose.Schema.Types.ObjectId, ref: 'History' }]
