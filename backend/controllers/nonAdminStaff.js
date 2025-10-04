@@ -1,4 +1,3 @@
-import User from '../models/user.js';
 import Expense from '../models/expense.js';
 
 const getData = async (req, res) => {
@@ -87,7 +86,7 @@ const updateExpense = async (req, res) => {
             }
             else if (count === total) {
                 expense.status = 'REJECTED';
-                expense.currentApproverId = null;non
+                expense.currentApproverId = null;
             }
         }
         res.status(200).json(expense);
@@ -97,3 +96,5 @@ const updateExpense = async (req, res) => {
 };
 
 export {updateExpense, getData};
+
+export { getData, updateExpense };
