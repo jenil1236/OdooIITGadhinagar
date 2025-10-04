@@ -97,4 +97,3 @@ const updateExpense = async (req, res) => {
 
 export {updateExpense, getData};
 
-export { getData, updateExpense };

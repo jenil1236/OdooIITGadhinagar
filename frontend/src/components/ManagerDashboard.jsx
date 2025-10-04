@@ -11,96 +11,135 @@ const ManagerDashboard = () => {
   });
   const [selectedApproval, setSelectedApproval] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock data - in real app, this would come from API
+  // Fetch pending approvals from API
   useEffect(() => {
-    const mockApprovals = [
-      {
-        id: 1,
-        subject: "Business Travel - Client Meeting",
-        owner: "John Smith",
-        category: "Travel",
-        status: "Pending",
-        amount: 1500,
-        date: "2025-10-03",
-        currency: "USD",
-        description:
-          "Travel expenses for client meeting in New York including flight, hotel, and local transportation.",
-        receipt: "receipt_travel_001.pdf",
-        submittedDate: "2025-10-01",
-        projectCode: "PROJ-2024-001",
-        items: [
-          { description: "Flight to NYC", amount: 650 },
-          { description: "Hotel (3 nights)", amount: 600 },
-          { description: "Local transportation", amount: 250 },
-        ],
-      },
-      {
-        id: 2,
-        subject: "Team Lunch - Project Completion",
-        owner: "Sarah Johnson",
-        category: "Meals",
-        status: "Pending",
-        amount: 320,
-        date: "2025-10-02",
-        currency: "USD",
-        description:
-          "Team celebration lunch for successful project completion at Italian Restaurant.",
-        receipt: "receipt_lunch_002.pdf",
-        submittedDate: "2025-10-02",
-        projectCode: "PROJ-2024-015",
-        items: [{ description: "Team lunch", amount: 320 }],
-      },
-      {
-        id: 3,
-        subject: "Software Subscription",
-        owner: "Mike Chen",
-        category: "Software",
-        status: "Pending",
-        amount: 899,
-        date: "2025-10-01",
-        currency: "USD",
-        description: "Annual subscription for design software and tools.",
-        receipt: "receipt_software_003.pdf",
-        submittedDate: "2025-09-28",
-        projectCode: "PROJ-2024-008",
-        items: [{ description: "Design Suite Subscription", amount: 899 }],
-      },
-    ];
-
-    setApprovals(mockApprovals);
-
-    // Calculate stats
-    const pending = mockApprovals.filter((a) => a.status === "Pending").length;
-    const totalAmount = mockApprovals.reduce(
-      (sum, item) => sum + item.amount,
-      0
-    );
-
-    setStats({
-      pending,
-      approved: 15, // Mock data
-      rejected: 3, // Mock data
-      totalAmount,
-    });
+    fetchApprovals();
   }, []);
 
-  const handleApprove = (id) => {
-    setApprovals(
-      approvals.map((approval) =>
-        approval.id === id ? { ...approval, status: "Approved" } : approval
-      )
-    );
-    // In real app, make API call here
+  const fetchApprovals = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch("/api/manager/approvals", {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch approvals");
+      }
+
+      const data = await response.json();
+
+      // Transform API data to match frontend structure
+      const transformedApprovals = data.expenses.map((expense) => ({
+        id: expense._id,
+        subject: expense.description || "Expense Request",
+        owner: expense.ownerId?.name || "Unknown User",
+        category: expense.category || "General",
+        status: mapStatus(expense.status),
+        amount: expense.amount || 0,
+        date: new Date(expense.createdAt).toLocaleDateString(),
+        currency: expense.currency || "USD",
+        description: expense.details || "No description provided",
+        receipt: expense.receiptUrl ? "receipt.pdf" : "No receipt",
+        submittedDate: new Date(expense.createdAt).toLocaleDateString(),
+        projectCode: expense.projectCode || "N/A",
+        items: expense.items || [
+          { description: "Expense", amount: expense.amount },
+        ],
+        // Backend specific fields
+        _id: expense._id,
+        isSequentialApproval: expense.isSequentialApproval,
+        currentApproverId: expense.currentApproverId,
+        approvalFlow: expense.approvalFlow,
+        minimumApprovalPercentage: expense.minimumApprovalPercentage,
+      }));
+
+      setApprovals(transformedApprovals);
+
+      // Calculate stats from API data
+      if (data.stats) {
+        setStats({
+          pending: data.stats.pending,
+          approved: data.stats.approved,
+          rejected: data.stats.rejected,
+          totalAmount: data.stats.totalAmount,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching approvals:", error);
+      // Fallback to empty state
+      setApprovals([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleReject = (id) => {
-    setApprovals(
-      approvals.map((approval) =>
-        approval.id === id ? { ...approval, status: "Rejected" } : approval
-      )
-    );
-    // In real app, make API call here
+  // Map backend status to frontend status
+  const mapStatus = (backendStatus) => {
+    const statusMap = {
+      PENDING: "Pending",
+      APPROVED: "Approved",
+      REJECTED: "Rejected",
+    };
+    return statusMap[backendStatus] || "Pending";
+  };
+
+  // Map frontend status to backend status
+  const mapToBackendStatus = (frontendStatus) => {
+    const statusMap = {
+      Approved: "APPROVED",
+      Rejected: "REJECTED",
+      Pending: "PENDING",
+    };
+    return statusMap[frontendStatus] || "PENDING";
+  };
+
+  const handleApprove = async (id) => {
+    try {
+      const response = await fetch(`/api/manager/expenses/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ status: "APPROVED" }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to approve expense");
+      }
+
+      // Refresh the approvals list
+      await fetchApprovals();
+    } catch (error) {
+      console.error("Error approving expense:", error);
+      alert("Failed to approve expense. Please try again.");
+    }
+  };
+
+  const handleReject = async (id) => {
+    try {
+      const response = await fetch(`/api/manager/expenses/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ status: "REJECTED" }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to reject expense");
+      }
+
+      // Refresh the approvals list
+      await fetchApprovals();
+    } catch (error) {
+      console.error("Error rejecting expense:", error);
+      alert("Failed to reject expense. Please try again.");
+    }
   };
 
   const handleViewDetails = (approval) => {
@@ -123,6 +162,52 @@ const ManagerDashboard = () => {
       <span className={`status-badge ${statusClasses[status]}`}>{status}</span>
     );
   };
+
+  // Check if manager can approve this expense based on backend logic
+  const canManagerApprove = (approval) => {
+    if (!approval.isSequentialApproval) return true;
+
+    if (
+      approval.isSequentialApproval &&
+      approval.currentApproverId === getUserManagerId()
+    ) {
+      return true;
+    }
+
+    return false;
+  };
+
+  // Mock function - replace with actual user manager ID from your auth context
+  const getUserManagerId = () => {
+    return "current-user-manager-id"; // This should come from your auth context
+  };
+
+  const getApprovalFlowInfo = (approval) => {
+    if (!approval.approvalFlow) return null;
+
+    const currentApprover = approval.approvalFlow.find(
+      (flow) => flow.approverId === approval.currentApproverId
+    );
+
+    return {
+      currentApprover: currentApprover?.approverId?.name || "Unknown",
+      totalApprovers: approval.approvalFlow.length,
+      approvedCount: approval.approvalFlow.filter(
+        (flow) => flow.status === "APPROVED"
+      ).length,
+      requiredApproval: approval.minimumApprovalPercentage,
+    };
+  };
+
+  if (isLoading) {
+    return (
+      <div className="manager-dashboard">
+        <div className="loading-state">
+          <p>Loading approvals...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="manager-dashboard">
@@ -160,7 +245,9 @@ const ManagerDashboard = () => {
         <div className="section-header">
           <h2>Approvals to Review</h2>
           <div className="section-actions">
-            <button className="btn btn-primary">Export Report</button>
+            <button className="btn btn-primary" onClick={fetchApprovals}>
+              Refresh
+            </button>
           </div>
         </div>
 
@@ -183,48 +270,62 @@ const ManagerDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {approvals.map((approval) => (
-                  <tr key={approval.id}>
-                    <td className="subject-cell">
-                      <div className="subject-title">{approval.subject}</div>
-                    </td>
-                    <td>{approval.owner}</td>
-                    <td>
-                      <span className="category-tag">{approval.category}</span>
-                    </td>
-                    <td>{getStatusBadge(approval.status)}</td>
-                    <td className="amount-cell">
-                      ${approval.amount.toLocaleString()} {approval.currency}
-                    </td>
-                    <td>{approval.date}</td>
-                    <td>
-                      <div className="action-buttons">
-                        {approval.status === "Pending" && (
-                          <>
-                            <button
-                              className="btn btn-success btn-sm"
-                              onClick={() => handleApprove(approval.id)}
-                            >
-                              Approve
-                            </button>
-                            <button
-                              className="btn btn-danger btn-sm"
-                              onClick={() => handleReject(approval.id)}
-                            >
-                              Reject
-                            </button>
-                          </>
+                {approvals.map((approval) => {
+                  const canApprove = canManagerApprove(approval);
+                  const flowInfo = getApprovalFlowInfo(approval);
+
+                  return (
+                    <tr key={approval.id}>
+                      <td className="subject-cell">
+                        <div className="subject-title">{approval.subject}</div>
+                        {flowInfo && (
+                          <div className="approval-progress">
+                            {flowInfo.approvedCount}/{flowInfo.totalApprovers}{" "}
+                            approved
+                            {approval.isSequentialApproval && ` (Sequential)`}
+                          </div>
                         )}
-                        <button
-                          className="btn btn-outline btn-sm"
-                          onClick={() => handleViewDetails(approval)}
-                        >
-                          View Details
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td>{approval.owner}</td>
+                      <td>
+                        <span className="category-tag">
+                          {approval.category}
+                        </span>
+                      </td>
+                      <td>{getStatusBadge(approval.status)}</td>
+                      <td className="amount-cell">
+                        ${approval.amount.toLocaleString()} {approval.currency}
+                      </td>
+                      <td>{approval.date}</td>
+                      <td>
+                        <div className="action-buttons">
+                          {approval.status === "Pending" && canApprove && (
+                            <>
+                              <button
+                                className="btn btn-success btn-sm"
+                                onClick={() => handleApprove(approval._id)}
+                              >
+                                Approve
+                              </button>
+                              <button
+                                className="btn btn-danger btn-sm"
+                                onClick={() => handleReject(approval._id)}
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+                          <button
+                            className="btn btn-outline btn-sm"
+                            onClick={() => handleViewDetails(approval)}
+                          >
+                            View Details
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -235,28 +336,15 @@ const ManagerDashboard = () => {
       <section className="recent-activity">
         <h2>Recent Activity</h2>
         <div className="activity-list">
-          <div className="activity-item">
-            <div className="activity-content">
-              <span className="activity-user">John Smith</span>
-              submitted a travel expense request
+          {approvals.slice(0, 3).map((approval) => (
+            <div className="activity-item" key={approval.id}>
+              <div className="activity-content">
+                <span className="activity-user">{approval.owner}</span>
+                submitted a {approval.category.toLowerCase()} expense request
+              </div>
+              <div className="activity-time">{approval.date}</div>
             </div>
-            <div className="activity-time">2 hours ago</div>
-          </div>
-          <div className="activity-item">
-            <div className="activity-content">
-              You approved{" "}
-              <span className="activity-user">Sarah Johnson's</span> meal
-              expense
-            </div>
-            <div className="activity-time">1 day ago</div>
-          </div>
-          <div className="activity-item">
-            <div className="activity-content">
-              <span className="activity-user">Mike Chen</span> updated software
-              subscription request
-            </div>
-            <div className="activity-time">2 days ago</div>
-          </div>
+          ))}
         </div>
       </section>
 
@@ -307,6 +395,21 @@ const ManagerDashboard = () => {
                     <label>Submitted Date:</label>
                     <span>{selectedApproval.submittedDate}</span>
                   </div>
+                  {selectedApproval.approvalFlow && (
+                    <div className="detail-item full-width">
+                      <label>Approval Progress:</label>
+                      <span>
+                        {
+                          selectedApproval.approvalFlow.filter(
+                            (flow) => flow.status === "APPROVED"
+                          ).length
+                        }
+                        /{selectedApproval.approvalFlow.length} approved
+                        {selectedApproval.minimumApprovalPercentage &&
+                          ` (${selectedApproval.minimumApprovalPercentage}% required)`}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -340,39 +443,51 @@ const ManagerDashboard = () => {
               </div>
 
               <div className="detail-section">
-                <h4>Attachments</h4>
-                <div className="attachment-item">
-                  <span className="attachment-icon">📎</span>
-                  <span className="attachment-name">
-                    {selectedApproval.receipt}
-                  </span>
-                  <button className="btn btn-outline btn-sm">Download</button>
+                <h4>Approval Flow</h4>
+                <div className="approval-flow">
+                  {selectedApproval.approvalFlow?.map((flow, index) => (
+                    <div key={index} className="flow-item">
+                      <span className="approver-name">
+                        {flow.approverId?.name || `Approver ${index + 1}`}
+                      </span>
+                      <span
+                        className={`flow-status ${flow.status.toLowerCase()}`}
+                      >
+                        {flow.status}
+                      </span>
+                      {flow.approverId ===
+                        selectedApproval.currentApproverId && (
+                        <span className="current-approver">Current</span>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
             <div className="modal-footer">
-              {selectedApproval.status === "Pending" && (
-                <div className="modal-actions">
-                  <button
-                    className="btn btn-success"
-                    onClick={() => {
-                      handleApprove(selectedApproval.id);
-                      closeModal();
-                    }}
-                  >
-                    Approve Expense
-                  </button>
-                  <button
-                    className="btn btn-danger"
-                    onClick={() => {
-                      handleReject(selectedApproval.id);
-                      closeModal();
-                    }}
-                  >
-                    Reject Expense
-                  </button>
-                </div>
-              )}
+              {selectedApproval.status === "Pending" &&
+                canManagerApprove(selectedApproval) && (
+                  <div className="modal-actions">
+                    <button
+                      className="btn btn-success"
+                      onClick={() => {
+                        handleApprove(selectedApproval._id);
+                        closeModal();
+                      }}
+                    >
+                      Approve Expense
+                    </button>
+                    <button
+                      className="btn btn-danger"
+                      onClick={() => {
+                        handleReject(selectedApproval._id);
+                        closeModal();
+                      }}
+                    >
+                      Reject Expense
+                    </button>
+                  </div>
+                )}
               <button className="btn btn-outline" onClick={closeModal}>
                 Close
               </button>

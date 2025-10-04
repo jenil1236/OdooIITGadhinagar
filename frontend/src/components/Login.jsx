@@ -1,7 +1,6 @@
-// src/components/Login.jsx
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Link, useNavigate } from "react-router-dom"; // Add useNavigate import
+import { Link, useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -11,7 +10,7 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
-  const navigate = useNavigate(); // Initialize navigate
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -40,42 +39,51 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      // Simulate login API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Make API call to login endpoint
+      const response = await fetch("/api/users/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
 
-      // In real app, verify credentials with backend
-      // For demo purposes, we'll determine role based on email
-      const isAdmin =
-        formData.email.includes("admin") ||
-        formData.email.includes("@company.com");
-      const isEmployee =
-        formData.email.includes("employee") ||
-        formData.email.includes("@employee.com");
+      const result = await response.json();
 
+      if (!response.ok) {
+        throw new Error(result.message || "Login failed");
+      }
+
+      // Login successful - use the user data from backend
       const userData = {
-        id: "1",
-        name: isAdmin ? "Admin User" : "Employee User",
-        email: formData.email,
-        role: isAdmin ? "ADMIN" : isEmployee ? "EMPLOYEE" : "EMPLOYEE", // Default to employee
-        companyName: "Benerous Magpie",
-        currency: "USD",
-        country: "United States",
+        id: result.user._id || result.user.id,
+        name: result.user.name || result.user.email.split('@')[0],
+        email: result.user.email,
+        role: result.user.role || "EMPLOYEE",
+        companyId: result.user.companyId,
+        companyName: result.user.companyName || "Your Company",
+        currency: result.user.currency || "USD",
+        country: result.user.country || "United States",
+        token: result.token, // if using JWT
       };
 
       login(userData);
 
-      // ADD NAVIGATION LOGIC HERE
-      if (userData.role === "ADMIN") {
+      // Navigate based on user role
+      if (userData.role === "ADMIN" || userData.role === "Admin") {
         navigate("/admin/dashboard");
-      } else if (userData.role === "EMPLOYEE") {
-        navigate("/employee/dashboard");
       } else {
-        // Default fallback
         navigate("/employee/dashboard");
       }
+
     } catch (error) {
       console.error("Login error:", error);
-      setErrors({ submit: "Invalid email or password" });
+      setErrors({ 
+        submit: error.message || "Invalid email or password. Please try again." 
+      });
     } finally {
       setIsLoading(false);
     }
@@ -150,9 +158,19 @@ const Login = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-3 rounded-lg font-medium hover:from-blue-700 hover:to-indigo-800 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-3 rounded-lg font-medium hover:from-blue-700 hover:to-indigo-800 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
             >
-              {isLoading ? "Signing in..." : "Sign In"}
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Signing in...
+                </div>
+              ) : (
+                "Sign In"
+              )}
             </button>
           </form>
 
@@ -175,21 +193,14 @@ const Login = () => {
             </p>
           </div>
 
-          {/* Demo Credentials Hint */}
+          {/* Demo Credentials Hint - Remove if using real backend */}
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
             <p className="text-sm font-medium text-gray-700 mb-2">
-              Demo Credentials:
+              Note: Using real backend authentication
             </p>
             <div className="text-xs text-gray-600 space-y-1">
-              <p>
-                <strong>Admin:</strong> admin@company.com / any password
-              </p>
-              <p>
-                <strong>Employee:</strong> employee@company.com / any password
-              </p>
-              <p>
-                <strong>Or:</strong> any email containing "admin" or "employee"
-              </p>
+              <p>Enter your registered email and password</p>
+              <p>Make sure your backend server is running</p>
             </div>
           </div>
         </div>
