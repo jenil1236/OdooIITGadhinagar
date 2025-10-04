@@ -59,12 +59,12 @@
 
 import express from "express";
 import passport from "passport";
-import { signup, login, logout, advancedSignup, forgotPassword, verifyOtp, resetPassword } from "../controllers/user.js";
+import { Signup, login, logout, advancedSignup, forgotPassword, verifyOtp, resetPassword } from "../controllers/user.js";
 
 const router = express.Router();
 
 // POST /signup
-router.post("/signup", signup);
+router.post("/signup", Signup);
 
 // POST /register
 router.post("/register", advancedSignup);

@@ -22,8 +22,9 @@ const generateRandomPassword = () => {
 // Signup Controller (with email login)
 // -----------------------------
 
+
 export const Signup = async (req, res) => {
-  try{
+  try {
     const {
       name,
       email,
@@ -32,42 +33,59 @@ export const Signup = async (req, res) => {
       country,
       companyname,
       currency
-  } = req.body;
+    } = req.body;
 
-  if (!name || !email || !password || !confirmpassword || !country || !companyname || !currency) {
-    return res.status(400).json({ message: "Please fill all fields" });
-  }
-  if (password !== confirmpassword) {
-    return res.status(400).json({ message: "Passwords do not match" });
-  }
-  const userExists = await User.findOne({ email });
-  if (userExists) {
-    return res.status(400).json({ message: "User already exists" });
-  }
+    if (!name || !email || !password || !confirmpassword || !country || !companyname || !currency) {
+      return res.status(400).json({ message: "Please fill all fields" });
+    }
 
-  const companyExists = await company.findOne({ name: companyname });
-  if (companyExists) {
-    return res.status(400).json({ message: "Company name already exists" });
-  }
+    if (password !== confirmpassword) {
+      return res.status(400).json({ message: "Passwords do not match" });
+    }
 
-  const newCompany = new company({ name: companyname, country, baseCurrency: currency });
-  await newCompany.save();
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: "User already exists" });
+    }
 
-  const newUser = new User({
-    name,
-    email,
-    password,
-    country,
-    companyId: newCompany._id,
-    role: 'Admin' // Default role as Admin for the first user
-  });
-  await newUser.save();
+    const companyExists = await company.findOne({ name: companyname });
+    if (companyExists) {
+      return res.status(400).json({ message: "Company name already exists" });
+    }
 
-  res.status(201).json({ message: "User registered successfully" });
-}   catch (err) {
+    const newCompany = new company({ name: companyname, country, baseCurrency: currency });
+    await newCompany.save();
+
+    // ✅ Create user WITHOUT password field
+    const newUser = new User({
+      name,
+      email,
+      country,
+      companyId: newCompany._id,
+      role: 'Admin'
+    });
+
+    // ✅ Register the user and hash the password
+    const registeredUser = await User.register(newUser, password);
+
+    // Optional: auto-login after signup
+    req.login(registeredUser, (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.status(201).json({
+        message: "User registered successfully",
+        user: {
+          id: registeredUser._id,
+          email: registeredUser.email,
+          name: registeredUser.name,
+          role: registeredUser.role,
+          companyId: registeredUser.companyId
+        }
+      });
+    });
+
+  } catch (err) {
     res.status(500).json({ message: err.message || "Error registering user" });
-}
-
+  }
 };
 
 export const advancedSignup = async (req, res) => {
