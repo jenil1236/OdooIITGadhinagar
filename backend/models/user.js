@@ -31,8 +31,11 @@ const userSchema = new Schema({
     },
     isRequired: { type: Boolean, default: false }
   }],
-  isManagerApprover: { type: Boolean, default: false },
-});
+  isManagerApprover: { type: Boolean},
+  isSequentialApproval: { type: Boolean },
+  minimumApprovalPercentage: { type: Number, min: 0, max: 100 },
+
+}, { timestamps: true});
 
 userSchema.plugin(passportLocalMongoose, { usernameField: "email" });
 export default mongoose.model('User', userSchema);
