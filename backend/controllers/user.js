@@ -22,6 +22,7 @@ const generateRandomPassword = () => {
 // Signup Controller (with email login)
 // -----------------------------
 
+
 export const Signup = async (req, res) => {
   try {
     const {

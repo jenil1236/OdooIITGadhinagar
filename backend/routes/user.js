@@ -59,7 +59,7 @@
 
 import express from "express";
 import passport from "passport";
-import { Signup, login, logout, advancedSignup, forgotPassword, verifyOtp, resetPassword } from "../controllers/user.js";
+import { signup, login, logout, advancedSignup, forgotPassword, verifyOtp, resetPassword } from "../controllers/user.js";
 
 const router = express.Router();
 

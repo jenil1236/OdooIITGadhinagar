@@ -23,6 +23,10 @@ const expenseSchema = new mongoose.Schema({
         },
         isRequired: { type: Boolean, default: false }
     }],
+    status: {
+        type: String,
+        enum: ['PENDING', 'APPROVED', 'REJECTED']
+    },
     isManagerApprover: { type: Boolean },
     isSequentialApproval: { type: Boolean },
     minimumApprovalPercentage: { type: Number, min: 0, max: 100 },
