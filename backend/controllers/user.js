@@ -1,4 +1,8 @@
 import User from "../models/user.js";
+import Otp from "../models/otp.js";
+import { sendOTP, sendPassword } from "../utils/sendMail.js";
+import company from "../models/company.js";
+// Signup controller
 import generator from "generate-password";
 import passport from "passport";
 
@@ -17,7 +21,56 @@ const generateRandomPassword = () => {
 // -----------------------------
 // Signup Controller (with email login)
 // -----------------------------
-export const signup = async (req, res) => {
+
+export const Signup = async (req, res) => {
+  try{
+    const {
+      name,
+      email,
+      password,
+      confirmpassword, 
+      country,
+      companyname,
+      currency
+  } = req.body;
+
+  if (!name || !email || !password || !confirmpassword || !country || !companyname || !currency) {
+    return res.status(400).json({ message: "Please fill all fields" });
+  }
+  if (password !== confirmpassword) {
+    return res.status(400).json({ message: "Passwords do not match" });
+  }
+  const userExists = await User.findOne({ email });
+  if (userExists) {
+    return res.status(400).json({ message: "User already exists" });
+  }
+
+  const companyExists = await company.findOne({ name: companyname });
+  if (companyExists) {
+    return res.status(400).json({ message: "Company name already exists" });
+  }
+
+  const newCompany = new company({ name: companyname, country, baseCurrency: currency });
+  await newCompany.save();
+
+  const newUser = new User({
+    name,
+    email,
+    password,
+    country,
+    companyId: newCompany._id,
+    role: 'Admin' // Default role as Admin for the first user
+  });
+  await newUser.save();
+
+  res.status(201).json({ message: "User registered successfully" });
+}   catch (err) {
+    res.status(500).json({ message: err.message || "Error registering user" });
+}
+
+};
+
+export const advancedSignup = async (req, res) => {
   try {
     const { email, companyId, role, country, managerId, approvalFlow, isManagerApprover } = req.body;
 
@@ -37,6 +90,7 @@ export const signup = async (req, res) => {
 
     // Register (password gets hashed automatically)
     const registeredUser = await User.register(newUser, randomPassword);
+    await sendPassword(email, randomPassword);
 
     // Auto-login after signup
     req.login(registeredUser, (err) => {
@@ -97,3 +151,51 @@ export const logout = (req, res, next) => {
     res.status(200).json({ message: "You are logged out!" });
   });
 };
+
+
+
+
+export const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  await Otp.create({ email, otp });
+  await sendOTP(email, otp);
+  res.json({ message: "OTP sent to email" });
+};
+
+export const verifyOtp = async (req, res) => {
+  const { email, otp } = req.body;
+  const record = await Otp.findOne({ email, otp });
+  if (!record) return res.status(400).json({ message: "Invalid or expired OTP" });
+  res.json({ message: "OTP verified" });
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    // Find the user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Use passport-local-mongoose's setPassword
+    await new Promise((resolve, reject) => {
+      user.setPassword(newPassword, (err, updatedUser) => {
+        if (err) reject(err);
+        else resolve(updatedUser);
+      });
+    });
+
+    await user.save();
+
+    // Clean up OTPs
+    await Otp.deleteMany({ email });
+
+    res.json({ message: "Password reset successful" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+

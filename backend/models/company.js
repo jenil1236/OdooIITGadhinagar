@@ -1,5 +1,5 @@
 const companySchema = new mongoose.Schema({
-  name: { type: String, required: true },
+  name: { type: String, required: true, unique: true },
   country: { type: String, required: true },
   baseCurrency: { type: String, required: true, default: 'USD' },
   timezone: { type: String, default: 'UTC' },
